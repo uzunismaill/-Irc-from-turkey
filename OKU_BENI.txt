@@ -1,0 +1,26 @@
+Mr.Sword IRC Client - Terminal Sürümü (2025)
+==============================================
+
+Bu scripti terminalde (komut satırı) çalıştırmak için hazırladım. 
+Web tarayıcısında değil, doğrudan bilgisayarınızın terminalinde çalışır.
+
+TÜRKÇE KARAKTER DESTEĞİ İÇİN:
+Terminalinizde Türkçe karakterlerin düzgün görünmesi için önce şu komutu çalıştırmanız gerekebilir:
+chcp 65001
+
+Nasıl Çalıştırılır?
+-------------------
+1. Bilgisayarınızda Python yüklü olmalıdır. (Yüklü değilse python.org'dan indirin).
+2. Bu klasörde bir terminal/komut satırı açın.
+3. Şu komutu yazın:
+   
+   python mrsword.py
+
+Özellikler:
+- Gerçek terminal deneyimi
+- Matrix/Hacker tarzı akış
+- Türkçe komutlar (baglan, katil, yardim)
+- Simüle edilmiş sunucu bağlantısı ve sohbet
+
+İyi eğlenceler!
+Antigravity
