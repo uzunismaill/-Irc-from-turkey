@@ -4,6 +4,7 @@ import random
 import os
 import socket
 import threading
+import subprocess
 
 # Renk Kodları (ANSI)
 class Colors:
@@ -157,6 +158,68 @@ def receive_messages_p2p(sock, user_type):
             # Bağlantı kesilirse sessizce çık veya uyar
             os._exit(0)
 
+            # Bağlantı kesilirse sessizce çık veya uyar
+            os._exit(0)
+
+def start_ssh_tunnel(port):
+    """
+    SSH Tünelleme kullanarak portu internete açar (Ngrok alternatifi).
+    Hesap gerektirmez (Serveo.net kullanır).
+    """
+    print_line("Otomatik Tünel Başlatılıyor (Serveo)...", prefix="[NETWORK]", color=Colors.YELLOW)
+    
+    # Komut: ssh -o StrictHostKeyChecking=no -R 0:localhost:PORT serveo.net
+    cmd = ["ssh", "-o", "StrictHostKeyChecking=no", "-R", f"0:localhost:{port}", "serveo.net"]
+    
+    try:
+        # Windows için pencere gizleme bayrağı
+        startupinfo = None
+        if os.name == 'nt':
+            startupinfo = subprocess.STARTUPINFO()
+            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+
+        process = subprocess.Popen(
+            cmd,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            stdin=subprocess.PIPE, # Girdi beklemesi için
+            text=True,
+            bufsize=1,
+            startupinfo=startupinfo
+        )
+        
+        print_line("Tünel sunucusuna bağlanılıyor...", prefix="[WAIT]", color=Colors.BLUE)
+        
+        # Çıktıyı tara
+        start_t = time.time()
+        found_address = None
+        
+        while time.time() - start_t < 15:
+            # Satır satır oku (non-blocking olması zor, thread kullanacağız veya basit timeout)
+            # Basitlik için stdout'u okumaya çalışalım.
+            # Not: readline() bloklayabilir, ama serveo hemen cevap verir.
+            line = process.stdout.readline()
+            if not line:
+                break
+            
+            # Örnek çıktı: "Forwarding TCP connections from serveo.net:12345"
+            if "Forwarding TCP connections from" in line:
+                found_address = line.strip().split("from")[-1].strip()
+                break
+                
+        if found_address:
+            return process, found_address
+        else:
+            process.kill()
+            return None, None
+
+    except FileNotFoundError:
+        print_error("SSH komutu bulunamadı! Bilgisayarında SSH yüklü değil.")
+        return None, None
+    except Exception as e:
+        print_error(f"Tünel hatası: {e}")
+        return None, None
+
 def start_p2p_server():
     host = '0.0.0.0'
     port = 5555
@@ -172,9 +235,32 @@ def start_p2p_server():
     server.listen(1)
     server.settimeout(1.0) # 1 saniyelik timeout ekle ki Ctrl+C yakalayabilelim
 
+    tunnel_proc = None
+    
+    print(f"\n{Colors.CYAN}Bağlantı Tipi Seçin:{Colors.ENDC}")
+    print(f"1. {Colors.GREEN}Yerel Ağ (Aynı WiFi){Colors.ENDC}")
+    print(f"2. {Colors.RED}Global Ağ (Farklı Şehirler - Otomatik Tünel){Colors.ENDC}")
+    
+    net_choice = input(f"{Colors.YELLOW}Seçim (1/2): {Colors.ENDC}")
+    
     print(f"{Colors.BOLD}{Colors.GREEN}[*] Güvenli Soket Oluşturuldu (Port {port})...{Colors.ENDC}")
-    print(f"{Colors.GREEN}[*] Dinleme Modu Aktif. Arkadaşının IP'si bekleniyor...{Colors.ENDC}")
-    print(f"{Colors.YELLOW}[INFO] Senin IP Adresin: {Colors.BOLD}{get_local_ip()}{Colors.ENDC}")
+    
+    if net_choice == '2':
+        tunnel_proc, tunnel_addr = start_ssh_tunnel(port)
+        if tunnel_addr:
+            host_url, host_port =tunnel_addr.split(":")
+            print(f"\n{Colors.GREEN}" + "="*50)
+            print(f"   DÜNYA GENELİNDEN BAĞLANTI İÇİN BİLGİLER")
+            print(f"   ARKADAŞININ GİRECEĞİ IP   : {Colors.WHITE}{Colors.BOLD}{host_url}{Colors.GREEN}")
+            print(f"   ARKADAŞININ GİRECEĞİ PORT : {Colors.WHITE}{Colors.BOLD}{host_port}{Colors.GREEN}")
+            print("="*50 + f"{Colors.ENDC}\n")
+        else:
+            print_error("Otomatik tünel açılamadı. Yerel IP kullanılıyor.")
+            print(f"{Colors.YELLOW}[INFO] Senin Yerel IP Adresin: {Colors.BOLD}{get_local_ip()}{Colors.ENDC}")
+    else:
+        print(f"{Colors.GREEN}[*] Dinleme Modu Aktif. Yerel ağ üzerinden bekleniyor...{Colors.ENDC}")
+        print(f"{Colors.YELLOW}[INFO] Senin Yerel IP Adresin: {Colors.BOLD}{get_local_ip()}{Colors.ENDC}")
+    
     print(f"{Colors.RED}[!] İptal etmek için CTRL+C tuşlarına bas.{Colors.ENDC}")
 
     client = None
@@ -185,13 +271,19 @@ def start_p2p_server():
             client, addr = server.accept()
             break # Bağlantı geldi, döngüden çık
         except socket.timeout:
-            continue # Timeout oldu, döngüye devam et (Ctrl+C kontrolü için)
+            continue # Timeout oldu, döngüye devam et
         except KeyboardInterrupt:
              print(f"\n{Colors.RED}[!] Sunucu kapatıldı.{Colors.ENDC}")
+             if tunnel_proc: tunnel_proc.kill()
              server.close()
              return
 
+    if tunnel_proc:
+        # Bağlantı kurulsa bile tünel açık kalmalı
+        pass
+
     print(f"\n{Colors.BOLD}{Colors.GREEN}[+] BAĞLANTI SAPTANDI: {addr[0]} sisteme girdi!{Colors.ENDC}")
+
     print(f"{Colors.BLUE}[*] Güvenli tünel kuruluyor... [OK]{Colors.ENDC}")
     print("-" * 50)
     
@@ -209,8 +301,9 @@ def start_p2p_server():
         except Exception:
             break
 
-def start_p2p_client(target_ip):
-    port = 5555
+def start_p2p_client(target_ip, port=5555):
+    # port varsayılan olarak 5555, ama değiştirilebilir
+
     client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     
     print(f"{Colors.GREEN}[*] Hedef sisteme sızılıyor ({target_ip})...{Colors.ENDC}")
@@ -267,7 +360,11 @@ def process_command(cmd_line):
              start_p2p_server()
         elif sub_choice == '2':
              target = input(f"Arkadaşının IP Adresi (Örn: {get_local_ip()}): ")
-             start_p2p_client(target)
+             target_port = input("Hedef Port (Varsayılan 5555, Ngrok için değişir): ")
+             if target_port.strip():
+                 start_p2p_client(target, int(target_port))
+             else:
+                 start_p2p_client(target)
         else:
              print("İptal edildi.")
     elif cmd in ['cikis', 'exit', 'quit']:
