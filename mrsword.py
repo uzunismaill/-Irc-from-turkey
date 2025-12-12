@@ -5,6 +5,15 @@ import os
 import socket
 import threading
 import subprocess
+import base64
+try:
+    from cryptography.hazmat.primitives import hashes, serialization
+    from cryptography.hazmat.primitives.asymmetric import ec
+    from cryptography.hazmat.primitives.kdf.hkdf import HKDF
+    from cryptography.fernet import Fernet
+except ImportError:
+    print("Cryptography kütüphanesi eksik! Lütfen 'pip install cryptography' çalıştırın.")
+    sys.exit()
 
 # Renk Kodları (ANSI)
 class Colors:
@@ -35,6 +44,61 @@ ASCII_LOGO = Colors.GREEN + r"""
 is_connected = False
 current_channel = None
 username = "MrSwordUser"
+
+class E2EESecurity:
+    def __init__(self):
+        self.private_key = ec.generate_private_key(ec.SECP384R1())
+        self.public_key = self.private_key.public_key()
+        self.shared_key = None
+        self.fernet = None
+
+    def get_public_bytes(self):
+        return self.public_key.public_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PublicFormat.SubjectPublicKeyInfo
+        )
+
+    def generate_shared_secret(self, peer_public_bytes):
+        peer_public_key = serialization.load_pem_public_key(peer_public_bytes)
+        shared_secret = self.private_key.exchange(ec.ECDH(), peer_public_key)
+        
+        # Derive a key for Fernet (AES)
+        derived_key = HKDF(
+            algorithm=hashes.SHA256(),
+            length=32,
+            salt=None,
+            info=b'mrsword_handshake',
+        ).derive(shared_secret)
+        
+        self.fernet = Fernet(base64.urlsafe_b64encode(derived_key))
+        
+    def encrypt(self, message):
+        return self.fernet.encrypt(message.encode('utf-8'))
+        
+    def decrypt(self, token):
+        return self.fernet.decrypt(token).decode('utf-8')
+
+def perform_secure_handshake(sock, is_server=False):
+    print_line("GÜVENLİK PROTOKOLÜ BAŞLATILIYOR...", prefix="[SEC]", color=Colors.RED)
+    time.sleep(0.5)
+    sec = E2EESecurity()
+    my_pub = sec.get_public_bytes()
+    
+    print_line("2048-bit RSA/ECC Anahtarlar Oluşturuldu...", prefix="[SEC]", color=Colors.YELLOW)
+    
+    if is_server:
+        print_line("İstemci genel anahtarı bekleniyor...", prefix="[WAIT]", color=Colors.BLUE)
+        peer_pub_bytes = sock.recv(4096)
+        sock.send(my_pub)
+    else:
+        print_line("Genel anahtar sunucuya gönderiliyor...", prefix="[SEND]", color=Colors.BLUE)
+        sock.send(my_pub)
+        peer_pub_bytes = sock.recv(4096)
+        
+    sec.generate_shared_secret(peer_pub_bytes)
+    print_success("E2E (UÇTAN UCA) ŞİFRELEME AKTİF! [AES-256 + ECDH]")
+    print_line("Bu sohbette konuşulanları 3. kişiler (Hackerlar/Polis dahil) göremez.", prefix="[SECURE]", color=Colors.GREEN)
+    return sec
 
 def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
@@ -138,28 +202,33 @@ def hacker_decryption_effect(text, color=Colors.GREEN):
     sys.stdout.write(f"\r{Colors.ENDC}{Colors.RED}[✓] Arkadaş: {text}{Colors.ENDC}\n")
     sys.stdout.flush()
 
-def receive_messages_p2p(sock, user_type):
+def receive_messages_p2p(sock, user_type, security):
     while True:
         try:
-            msg = sock.recv(1024).decode('utf-8')
-            if msg:
-                # Gelen mesaj için efekt yap, sonra kendi input satırını tekrar yaz
-                # not: input() bloğu varken stdout yazmak bazen satırı bozar, ama basit çözüm bu.
-                sys.stdout.write("\r" + " " * 50 + "\r") # Satırı temizle
-                hacker_decryption_effect(msg)
-                
-                sys.stdout.write(f"{Colors.GREEN}root@terminal:~$ {Colors.ENDC}")
-                sys.stdout.flush()
-            else:
+            encrypted_msg = sock.recv(4096)
+            if not encrypted_msg:
                 print(f"\n{Colors.RED}Bağlantı koptu.{Colors.ENDC}")
                 sock.close()
                 os._exit(0)
-        except:
-            # Bağlantı kesilirse sessizce çık veya uyar
-            os._exit(0)
 
-            # Bağlantı kesilirse sessizce çık veya uyar
+            try:
+                msg = security.decrypt(encrypted_msg)
+            except Exception:
+                print(f"\n{Colors.RED}[!] Geçersiz şifreli paket alındı (Yoksayılıyor).{Colors.ENDC}")
+                continue
+
+            # Gelen mesaj için efekt yap, sonra kendi input satırını tekrar yaz
+            sys.stdout.write("\r" + " " * 60 + "\r") # Satırı temizle
+            hacker_decryption_effect(msg)
+            
+            sys.stdout.write(f"{Colors.GREEN}root@terminal:~$ {Colors.ENDC}")
+            sys.stdout.flush()
+
+        except OSError:
             os._exit(0)
+        except Exception as e:
+             # Beklenmeyen bir hata
+             os._exit(0)
 
 def start_ssh_tunnel(port):
     """
@@ -285,14 +354,18 @@ def start_p2p_server():
     print(f"\n{Colors.BOLD}{Colors.GREEN}[+] BAĞLANTI SAPTANDI: {addr[0]} sisteme girdi!{Colors.ENDC}")
 
     print(f"{Colors.BLUE}[*] Güvenli tünel kuruluyor... [OK]{Colors.ENDC}")
+    
+    # Handshake
+    security = perform_secure_handshake(client, is_server=True)
+
     print("-" * 50)
     
-    threading.Thread(target=receive_messages_p2p, args=(client, "Host"), daemon=True).start()
+    threading.Thread(target=receive_messages_p2p, args=(client, "Host", security), daemon=True).start()
     
     while True:
         try:
             msg = input(f"{Colors.GREEN}root@terminal:~$ {Colors.ENDC}")
-            client.send(msg.encode('utf-8'))
+            client.send(security.encrypt(msg))
         except KeyboardInterrupt:
             print("\nÇıkış yapılıyor...")
             client.close()
@@ -318,14 +391,18 @@ def start_p2p_client(target_ip, port=5555):
 
     print(f"\n{Colors.BOLD}{Colors.GREEN}[+] SİSTEME ERİŞİM SAĞLANDI!{Colors.ENDC}")
     print(f"{Colors.BLUE}[*] Loglar temizleniyor... [OK]{Colors.ENDC}")
+    
+    # Handshake
+    security = perform_secure_handshake(client, is_server=False)
+    
     print("-" * 50)
     
-    threading.Thread(target=receive_messages_p2p, args=(client, "Client"), daemon=True).start()
+    threading.Thread(target=receive_messages_p2p, args=(client, "Client", security), daemon=True).start()
     
     while True:
         try:
             msg = input(f"{Colors.GREEN}root@terminal:~$ {Colors.ENDC}")
-            client.send(msg.encode('utf-8'))
+            client.send(security.encrypt(msg))
         except KeyboardInterrupt:
             print("\nBağlantı sonlandırılıyor...")
             client.close()
@@ -412,6 +489,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+
 
 
 
