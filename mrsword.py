@@ -2,6 +2,8 @@ import sys
 import time
 import random
 import os
+import socket
+import threading
 
 # Renk Kodları (ANSI)
 class Colors:
@@ -61,6 +63,7 @@ def print_help():
     print(f"{Colors.BOLD}katil [kanal]{Colors.ENDC}   : Bir sohbet kanalına girer")
     print(f"{Colors.BOLD}temizle{Colors.ENDC}         : Ekranı temizler")
     print(f"{Colors.BOLD}cikis{Colors.ENDC}           : Uygulamadan çıkar")
+    print(f"{Colors.BOLD}sohbet{Colors.ENDC}          : P2P Mesajlaşma (Gerçek)")
     print(f"{Colors.YELLOW}---------------------\n{Colors.ENDC}")
 
 def connect_server(args):
@@ -107,6 +110,136 @@ def join_channel(args):
     print(f"{Colors.BOLD}Konu:{Colors.ENDC} {Colors.CYAN}Mr.Sword'un Mekanı - Keyifli Sohbetler{Colors.ENDC}")
     print(f"{Colors.BOLD}Kullanıcılar:{Colors.ENDC} {Colors.RED}@MrSword{Colors.ENDC},{Colors.ENDC}, Misafir")
 
+# --- P2P Sohbet Fonksiyonları ---
+def get_local_ip():
+    s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    try:
+        # Dış internete bağlı gibi yaparak yerel IP'yi bul
+        s.connect(('8.8.8.8', 80))
+        IP = s.getsockname()[0]
+    except Exception:
+        IP = '127.0.0.1'
+    finally:
+        s.close()
+    return IP
+
+def hacker_decryption_effect(text, color=Colors.GREEN):
+    """Metni 'şifresi çözülüyormuş' gibi gösterir."""
+    chars = "01010101010101"
+    # Kısa bir efekt
+    sys.stdout.write(color)
+    for _ in range(3):
+        sys.stdout.write(f"\r[{''.join(random.choice(chars) for _ in range(10))}] Şifreli Veri Çözülüyor...")
+        sys.stdout.flush()
+        time.sleep(0.1)
+    
+    # Gerçek mesajı göster
+    sys.stdout.write(f"\r{Colors.ENDC}{Colors.RED}[✓] Arkadaş: {text}{Colors.ENDC}\n")
+    sys.stdout.flush()
+
+def receive_messages_p2p(sock, user_type):
+    while True:
+        try:
+            msg = sock.recv(1024).decode('utf-8')
+            if msg:
+                # Gelen mesaj için efekt yap, sonra kendi input satırını tekrar yaz
+                # not: input() bloğu varken stdout yazmak bazen satırı bozar, ama basit çözüm bu.
+                sys.stdout.write("\r" + " " * 50 + "\r") # Satırı temizle
+                hacker_decryption_effect(msg)
+                
+                sys.stdout.write(f"{Colors.GREEN}root@terminal:~$ {Colors.ENDC}")
+                sys.stdout.flush()
+            else:
+                print(f"\n{Colors.RED}Bağlantı koptu.{Colors.ENDC}")
+                sock.close()
+                os._exit(0)
+        except:
+            # Bağlantı kesilirse sessizce çık veya uyar
+            os._exit(0)
+
+def start_p2p_server():
+    host = '0.0.0.0'
+    port = 5555
+    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    
+    try:
+        server.bind((host, port))
+    except OSError as e:
+        print(f"{Colors.RED}Port hatası (Belki zaten açık?): {e}{Colors.ENDC}")
+        return
+
+    server.listen(1)
+    server.settimeout(1.0) # 1 saniyelik timeout ekle ki Ctrl+C yakalayabilelim
+
+    print(f"{Colors.BOLD}{Colors.GREEN}[*] Güvenli Soket Oluşturuldu (Port {port})...{Colors.ENDC}")
+    print(f"{Colors.GREEN}[*] Dinleme Modu Aktif. Arkadaşının IP'si bekleniyor...{Colors.ENDC}")
+    print(f"{Colors.YELLOW}[INFO] Senin IP Adresin: {Colors.BOLD}{get_local_ip()}{Colors.ENDC}")
+    print(f"{Colors.RED}[!] İptal etmek için CTRL+C tuşlarına bas.{Colors.ENDC}")
+
+    client = None
+    addr = None
+    
+    while True:
+        try:
+            client, addr = server.accept()
+            break # Bağlantı geldi, döngüden çık
+        except socket.timeout:
+            continue # Timeout oldu, döngüye devam et (Ctrl+C kontrolü için)
+        except KeyboardInterrupt:
+             print(f"\n{Colors.RED}[!] Sunucu kapatıldı.{Colors.ENDC}")
+             server.close()
+             return
+
+    print(f"\n{Colors.BOLD}{Colors.GREEN}[+] BAĞLANTI SAPTANDI: {addr[0]} sisteme girdi!{Colors.ENDC}")
+    print(f"{Colors.BLUE}[*] Güvenli tünel kuruluyor... [OK]{Colors.ENDC}")
+    print("-" * 50)
+    
+    threading.Thread(target=receive_messages_p2p, args=(client, "Host"), daemon=True).start()
+    
+    while True:
+        try:
+            msg = input(f"{Colors.GREEN}root@terminal:~$ {Colors.ENDC}")
+            client.send(msg.encode('utf-8'))
+        except KeyboardInterrupt:
+            print("\nÇıkış yapılıyor...")
+            client.close()
+            server.close()
+            break
+        except Exception:
+            break
+
+def start_p2p_client(target_ip):
+    port = 5555
+    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    
+    print(f"{Colors.GREEN}[*] Hedef sisteme sızılıyor ({target_ip})...{Colors.ENDC}")
+    time.sleep(1)
+    print(f"{Colors.CYAN}[*] Port taraması... AÇIK{Colors.ENDC}")
+    
+    try:
+        client.connect((target_ip, port))
+    except Exception as e:
+        print(f"{Colors.RED}[!] Bağlantı reddedildi: {e}{Colors.ENDC}")
+        return
+
+    print(f"\n{Colors.BOLD}{Colors.GREEN}[+] SİSTEME ERİŞİM SAĞLANDI!{Colors.ENDC}")
+    print(f"{Colors.BLUE}[*] Loglar temizleniyor... [OK]{Colors.ENDC}")
+    print("-" * 50)
+    
+    threading.Thread(target=receive_messages_p2p, args=(client, "Client"), daemon=True).start()
+    
+    while True:
+        try:
+            msg = input(f"{Colors.GREEN}root@terminal:~$ {Colors.ENDC}")
+            client.send(msg.encode('utf-8'))
+        except KeyboardInterrupt:
+            print("\nBağlantı sonlandırılıyor...")
+            client.close()
+            break
+        except Exception:
+            break
+
 def process_command(cmd_line):
     if not cmd_line.strip():
         return
@@ -123,6 +256,20 @@ def process_command(cmd_line):
         connect_server(args)
     elif cmd in ['katil', 'join']:
         join_channel(args)
+    elif cmd in ['sohbet', 'chat']:
+        print(f"\n{Colors.YELLOW}--- GERÇEK ZAMANLI CHAT (P2P) ---{Colors.ENDC}")
+        print("1. Bağlantı Bekle (Sunucu Ol)")
+        print("2. Arkadaşına Bağlan (İstemci Ol)")
+        print("3. İptal")
+        
+        sub_choice = input(f"\n{Colors.GREEN}Seçiminiz (1/2/3): {Colors.ENDC}")
+        if sub_choice == '1':
+             start_p2p_server()
+        elif sub_choice == '2':
+             target = input(f"Arkadaşının IP Adresi (Örn: {get_local_ip()}): ")
+             start_p2p_client(target)
+        else:
+             print("İptal edildi.")
     elif cmd in ['cikis', 'exit', 'quit']:
         print(f"{Colors.RED}Sistemden çıkılıyor...{Colors.ENDC}")
         time.sleep(1)
@@ -168,4 +315,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
 
