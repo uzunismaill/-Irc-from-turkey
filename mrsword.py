@@ -381,12 +381,19 @@ def start_p2p_client(target_ip, port=5555):
     
     print(f"{Colors.GREEN}[*] Hedef sisteme sızılıyor ({target_ip})...{Colors.ENDC}")
     time.sleep(1)
-    print(f"{Colors.CYAN}[*] Port taraması... AÇIK{Colors.ENDC}")
+    print(f"{Colors.CYAN}[*] Port taraması yapılıyor...{Colors.ENDC}")
+    time.sleep(1)
     
     try:
         client.connect((target_ip, port))
+        print(f"{Colors.CYAN}[*] Port {port} ... {Colors.GREEN}AÇIK{Colors.ENDC}")
     except Exception as e:
+        print(f"{Colors.RED}[!] Port {port} ... {Colors.RED}KAPALI{Colors.ENDC}")
         print(f"{Colors.RED}[!] Bağlantı reddedildi: {e}{Colors.ENDC}")
+        print(f"\n{Colors.YELLOW}[?] İPUÇLARI:{Colors.ENDC}")
+        print(f"{Colors.YELLOW} 1. Karşı tarafın '1. Bağlantı Bekle' seçeneğini seçtiğinden emin olun.{Colors.ENDC}")
+        print(f"{Colors.YELLOW} 2. IP adresinin ({target_ip}) ve Portun ({port}) doğru olduğundan emin olun.{Colors.ENDC}")
+        print(f"{Colors.YELLOW} 3. Aynı ağdaysanız yerel IP, farklı ağdaysanız Tünel IP'sini kullanın.{Colors.ENDC}")
         return
 
     print(f"\n{Colors.BOLD}{Colors.GREEN}[+] SİSTEME ERİŞİM SAĞLANDI!{Colors.ENDC}")
@@ -489,6 +496,8 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
 
 
 
