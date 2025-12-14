@@ -316,8 +316,6 @@ def start_ssh_tunnel(port):
     SSH Tünelleme: Önce Serveo.net dener, başarısız olursa Localhost.run dener.
     """
     
-    def _try_tunnel(cmd, service_name):
-        try:
     # İnternet kontrolü
     try:
         socket.create_connection(("8.8.8.8", 53), timeout=3)
