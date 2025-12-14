@@ -440,7 +440,16 @@ def start_p2p_server():
             print(f"{Colors.YELLOW}[INFO] Senin Yerel IP Adresin: {Colors.BOLD}{get_local_ip()}{Colors.ENDC}")
     else:
         print(f"{Colors.GREEN}[*] Dinleme Modu Aktif. Yerel ağ üzerinden bekleniyor...{Colors.ENDC}")
-        print(f"{Colors.YELLOW}[INFO] Senin Yerel IP Adresin: {Colors.BOLD}{get_local_ip()}{Colors.ENDC}")
+        local_ip = get_local_ip()
+        print(f"{Colors.YELLOW}[INFO] Senin Yerel IP Adresin: {Colors.BOLD}{local_ip}{Colors.ENDC}")
+        
+        if local_ip == "10.0.2.15":
+            print(f"\n{Colors.RED}[!] KRİTİK UYARI: Sanal Makine (VirtualBox) Tespit Edildi! [!]{Colors.ENDC}")
+            print(f"{Colors.YELLOW}    IP adresiniz '10.0.2.15' olarak görünüyor. Bu, sanal makinelerin varsayılan izole IP'sidir.{Colors.ENDC}")
+            print(f"{Colors.YELLOW}    Eğer arkadaşınız farklı bir bilgisayardaysa bu IP ile size BAĞLANAMAZ.{Colors.ENDC}")
+            print(f"{Colors.GREEN}    ÇÖZÜM:{Colors.ENDC}")
+            print(f"    1. 'Global Ağ' (Seçenek 2) modunu kullanın. (Otomatik Tünel)")
+            print(f"    2. Veya VirtualBox ayarlarından Ağ bağdaştırıcısını 'Köprü (Bridged)' moduna alın.")
     
     print(f"{Colors.RED}[!] İptal etmek için CTRL+C tuşlarına bas.{Colors.ENDC}")
 
@@ -502,11 +511,17 @@ def start_p2p_client(target_ip, port=5555):
     except Exception as e:
         print(f"{Colors.RED}[!] Port {port} ... {Colors.RED}KAPALI{Colors.ENDC}")
         print(f"{Colors.RED}[!] Bağlantı reddedildi: {e}{Colors.ENDC}")
-        print(f"\n{Colors.YELLOW}[?] İPUÇLARI:{Colors.ENDC}")
+        
+        print(f"\n{Colors.YELLOW}[?] TANI VE ÇÖZÜM:{Colors.ENDC}")
+        if target_ip == "10.0.2.15":
+            print(f"{Colors.RED}[!] HEDEF IP HATASI (10.0.2.15){Colors.ENDC}")
+            print(f"    Bu IP VirtualBox'ın varsayılan NAT IP'sidir ve dışarıdan erişilemez.")
+            print(f"    Eğer arkadaşınız da VirtualBox kullanıyorsa, ikinizin de IP'si aynı olabilir ancak")
+            print(f"    birbirinizi göremezsiniz. {Colors.GREEN}Lütfen 'Global Ağ' (Tünel) seçeneğini kullanın.{Colors.ENDC}")
+        
         print(f"{Colors.YELLOW} 1. Karşı tarafın '1. Bağlantı Bekle' seçeneğini seçtiğinden emin olun.{Colors.ENDC}")
-        print(f"{Colors.YELLOW} 2. IP adresinin ({target_ip}) ve Portun ({port}) doğru olduğundan emin olun.{Colors.ENDC}")
-        print(f"{Colors.YELLOW} 3. Aynı ağdaysanız yerel IP, farklı ağdaysanız Tünel IP'sini kullanın.{Colors.ENDC}")
-        print(f"{Colors.YELLOW} 4. Kali/Linux kullanıyorsanız güvenlik duvarı (UFW) port 5555'i engelliyor olabilir.{Colors.ENDC}")
+        print(f"{Colors.YELLOW} 2. Eğer farklı ağlardaysanız (farklı evler/internetler) {Colors.BOLD}MUTLAKA Global Ağ (Tünel){Colors.ENDC}{Colors.YELLOW} kullanın.{Colors.ENDC}")
+        print(f"{Colors.YELLOW} 3. Kali/Linux güvenlik duvarının (UFW) kapalı olduğundan emin olun.{Colors.ENDC}")
         return
 
     print(f"\n{Colors.BOLD}{Colors.GREEN}[+] SİSTEME ERİŞİM SAĞLANDI!{Colors.ENDC}")
