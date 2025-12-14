@@ -3,6 +3,10 @@
 
 Bu proje, terminal (komut satırı) üzerinden çalışan, hacker/matrix temalı bir IRC istemcisi simülasyonu ve P2P sohbet aracıdır. Web tarayıcısı gerektirmez, doğrudan terminalinizde çalışır.
 
+
+## Öncelikle Bilmen Gereken
+⚠️ Arkadaşınla konuşabilmen için VirtualBox ağ ayarları köprü bağdaştırıcısını etkinleştirmelisin.⚠️
+
 ## 🌟 Özellikler
 
 - **Gerçek Terminal Deneyimi:** Tamamen komut satırı tabanlı arayüz.
@@ -67,4 +71,5 @@ Bu yazılım eğitim ve eğlence amaçlı hazırlanmıştır. Kötü amaçlı ku
 
 ---
 *İyi eğlenceler!*
+
 
