@@ -26,6 +26,7 @@ class Colors:
     ENDC = '\033[0m'
     BOLD = '\033[1m'
     UNDERLINE = '\033[4m'
+    WHITE = '\033[97m'
 
 # ASCII Art Logo - Yeşil Hacker Teması
 ASCII_LOGO = Colors.GREEN + r"""
@@ -38,6 +39,21 @@ ASCII_LOGO = Colors.GREEN + r"""
                                                  
           -- BitchX REBORN 2025 -- 
        -- Mr.Sword Özel Sürümü v1.0 --
+""" + Colors.ENDC
+
+ASCII_SKULL = Colors.RED + r"""
+                         ______
+                      .-"      "-.
+                     /            \
+                    |              |
+                    |,  .-.  .-.  ,|
+                    | )(__/  \__)( |
+                    |/     /\     \|
+                    (_     ^^     _)
+                     \__|IIIIII|__/
+                      | \IIIIII/ |
+                      \          /
+                       `--------`
 """ + Colors.ENDC
 
 # State
@@ -100,9 +116,70 @@ def perform_secure_handshake(sock, is_server=False):
     print_line("Bu sohbette konuşulanları 3. kişiler (Hackerlar/Polis dahil) göremez.", prefix="[SECURE]", color=Colors.GREEN)
     return sec
 
+def play_laser_sound():
+    """Plays a laser-like sound effect on Windows."""
+    if os.name == 'nt':
+        try:
+            import winsound
+            # Hızlı frekans düşüşü ile 'Pew Pew' sesi
+            for start_freq in [1500, 1500]: # İki kez ateş
+                for freq in range(start_freq, 300, -100):
+                    winsound.Beep(freq, 20)
+                time.sleep(0.05)
+        except ImportError:
+            pass
+
+def animate_skull():
+    """Displays a glitching/animated skull effect."""
+    skull_frames = [
+        Colors.RED + r"""
+                         ______
+                      .-"      "-.
+                     /            \
+                    |              |
+                    |,  .-.  .-.  ,|
+                    | )(__/  \__)( |
+                    |/     /\     \|
+                    (_     ^^     _)
+                     \__|IIIIII|__/
+                      | \IIIIII/ |
+                      \          /
+                       `--------`
+""" + Colors.ENDC,
+        Colors.WHITE + r"""
+                         ______
+                      .-"      "-.
+                     /            \
+                    |              |
+                    |,  O  .  O   ,|
+                    | )(__/  \__)( |
+                    |/     /\     \|
+                    (_     ^^     _)
+                     \__|xxxxxx|__/
+                      | \xxxxxx/ |
+                      \          /
+                       `--------`
+""" + Colors.ENDC
+    ]
+    
+    # 3 kez yanıp sönme efekti
+    for _ in range(3):
+        for frame in skull_frames:
+            sys.stdout.write("\033[H\033[J") # Ekranı silmeden üstüne yazmak zor, clear kullanacağız
+            os.system('cls' if os.name == 'nt' else 'clear')
+            print("\n" * 2)
+            print(frame)
+            print(f"\n{Colors.RED}[!] SİSTEM İHLALİ TESPİT EDİLDİ [!]{Colors.ENDC}")
+            time.sleep(0.1)
+    
+    # Final hali
+    os.system('cls' if os.name == 'nt' else 'clear')
+    print("\n" * 2)
+    print(skull_frames[0])
+
 def clear_screen():
     os.system('cls' if os.name == 'nt' else 'clear')
-    print(ASCII_LOGO)
+    # ASCII_LOGO burada basılmıyor artık, main içinde yönetilecek
 
 def type_print(text, delay=0.03, color=Colors.GREEN):
     """Prints text with a typewriter effect and color."""
@@ -129,6 +206,7 @@ def print_help():
     print(f"{Colors.BOLD}temizle{Colors.ENDC}         : Ekranı temizler")
     print(f"{Colors.BOLD}cikis{Colors.ENDC}           : Uygulamadan çıkar")
     print(f"{Colors.BOLD}sohbet{Colors.ENDC}          : P2P Mesajlaşma (Gerçek)")
+    print(f"{Colors.BOLD}bot{Colors.ENDC}             : Yapay Zeka ile Sohbet (Mizah)")
     print(f"{Colors.YELLOW}---------------------\n{Colors.ENDC}")
 
 def connect_server(args):
@@ -138,27 +216,37 @@ def connect_server(args):
         return
 
     server = args[0] if args else "irc.mrsword.net"
-    print_line(f"{server} sunucusuna bağlanılıyor...", prefix="[SYSTEM]", color=Colors.BLUE)
+    print(ASCII_SKULL)
+    print_line(f"HEDEF: {server}", prefix="[TARGET]", color=Colors.RED)
+    print_line("Siber saldırı protokolleri başlatılıyor...", prefix="[INIT]", color=Colors.YELLOW)
     time.sleep(1)
 
     steps = [
-        "DNS Çözümleniyor...",
-        "IP Adresi Bulundu: 192.168.1.1",
-        "Sunucuya el sıkışılıyor... [SYN]",
-        "Sunucudan yanıt alındı... [ACK]",
-        "Şifreleme anahtarları değiştiriliyor... [RSA-4096]",
-        "Mr.Sword Güvenlik Protokolü Aktif...",
-        "ROOT Erişimi Sağlandı...",
-        "BAĞLANTI BAŞARILI!"
+        "Proxy zincirleri oluşturuluyor (Tor > VPN > SSH)...",
+        "Güvenlik duvarı bypass ediliyor...",
+        f"Hedef IP tespit edildi: {random.randint(10,200)}.{random.randint(0,255)}.{random.randint(0,255)}.{random.randint(0,255)}",
+        "Port 6667 (IRC) üzerinde zafiyet aranıyor...",
+        "Exploit gönderildi... [Buffer Overflow]",
+        "Yetki yükseltiliyor... [ROOT]",
+        "Arka kapı (Backdoor) yerleştirildi...",
+        "Loglar temizleniyor...",
+        "GİZLİ BAĞLANTI KURULDU."
     ]
 
     for step in steps:
-        prefix = random.choice([">", ">>", "#", "*"])
-        type_print(f"{prefix} {step}", 0.03, Colors.GREEN)
-        time.sleep(0.3)
+        prefix = random.choice(["[+]", "[*]", "[!]", "[>]"])
+        color = random.choice([Colors.GREEN, Colors.CYAN, Colors.BLUE])
+        type_print(f"{prefix} {step}", 0.02, color)
+        time.sleep(random.uniform(0.2, 0.6))
     
     is_connected = True
-    print_success("Hoşgeldiniz! Bir kanala girmek için 'katil # sohbet' yazın.")
+    print_success("Sisteme sızma başarılı! Kanalları listelemek için bekleyin...")
+    time.sleep(1)
+    print(f"\n{Colors.YELLOW}Mevcut Kanallar:{Colors.ENDC}")
+    print(f"  {Colors.GREEN}#genel{Colors.ENDC} - Yeni başlayan lamerlar")
+    print(f"  {Colors.RED}#deepweb{Colors.ENDC} - Sadece davetliler")
+    print(f"  {Colors.BLUE}#exploit{Colors.ENDC} - 0day paylaşımları")
+    print(f"\nBir kanala girmek için '{Colors.BOLD}katil #kanal{Colors.ENDC}' yazın.")
 
 def join_channel(args):
     global current_channel
@@ -442,6 +530,42 @@ def start_p2p_client(target_ip, port=5555):
         except Exception:
             break
 
+def get_bot_response(message):
+    """Returns a humorous/hacker-themed response based on the input."""
+    msg = message.lower()
+    
+    responses = [
+        "Sisteme sızmaya çalışıyorsun ama klavyen çok ses çıkarıyor...",
+        "Bu komutu çalıştırmak için IQ seviyen yetersiz olabilir.",
+        "Error 404: Mantık bulunamadı.",
+        "NSA loglarına kaydedildin. Şaka şaka... ya da değil?",
+        "Mavi hapı mı aldın kırmızı hapı mı?",
+        "Ben bir botum ama senden daha zeki olabilirim.",
+        "Terminallerde gezerken ayak izi bırakma evlat.",
+        "Şifrelerin '123456' mı? Gülünç.",
+        "Kahvemi dökmemeye çalışıyorum, beni meşgul etme.",
+        "Arka planda bitcoin kazmıyorum, söz veriyorum. (Belki biraz)",
+        "sudo rm -rf / yapmamı ister misin?",
+        "BitchX protokolü senin gibileri kahvaltıda yer.",
+        "IP adresini kara borsada satmamam için bir sebep söyle.",
+        "Gerçek hayatta da böyle misin yoksa sadece terminalde mi?",
+    ]
+    
+    if "merhaba" in msg or "selam" in msg:
+        return "Selam insanoğlu. Hangi veri tabanını patlatıyoruz bugün?"
+    elif "nasılsın" in msg:
+        return "İşlemcim %5 kullanımda, RAM ferah, keyfim yerinde. Sen?"
+    elif "hack" in msg:
+        return "Hacklemek sanat işidir, script kiddie olma."
+    elif "kimsin" in msg:
+        return "Ben Mr.Sword'un dijital ruhuyum. Ve senin kabusun."
+    elif "yardım" in msg:
+        return "Yardım istiyorsan Google kullan, ben dadı değilim."
+    elif "bot" in msg:
+        return "Bana 'bot' deme, 'Yapay Zeka Lordu' diyeceksin."
+    else:
+        return random.choice(responses)
+
 def process_command(cmd_line):
     if not cmd_line.strip():
         return
@@ -480,25 +604,65 @@ def process_command(cmd_line):
         print(f"{Colors.RED}Sistemden çıkılıyor...{Colors.ENDC}")
         time.sleep(1)
         sys.exit()
+    elif cmd in ['bot', 'ai']:
+        print(f"\n{Colors.YELLOW}--- MR.SWORD AI BOT V2.0 ---{Colors.ENDC}")
+        print(f"{Colors.RED}DİKKAT:{Colors.ENDC} Bu botun mizah anlayışı biraz karanlıktır.")
+        print("Çıkmak için 'exit' yazın.\n")
+        
+        while True:
+            try:
+                msg = input(f"{Colors.GREEN}Sen > {Colors.ENDC}")
+                if msg.lower() in ['exit', 'cikis', 'quit']:
+                    print("Bot kapatılıyor...")
+                    break
+                
+                resp = get_bot_response(msg)
+                time.sleep(0.5)
+                # Typewriter effect for bot
+                sys.stdout.write(f"{Colors.RED}Bot > {Colors.ENDC}")
+                type_print(resp, 0.02, Colors.YELLOW)
+            except KeyboardInterrupt:
+                break
     else:
         if is_connected and current_channel:
             timestamp = time.strftime("%H:%M")
             print(f"{Colors.BLUE}[{timestamp}]{Colors.ENDC} <{Colors.GREEN}{username}{Colors.ENDC}> {cmd_line}")
-            # Random bot response
-            if random.random() > 0.7:
-                time.sleep(1)
-                print(f"{Colors.BLUE}[{timestamp}]{Colors.ENDC} <{Colors.RED}Bot{Colors.ENDC}> \"{cmd_line}\" dedin ama burası hacker bölgesi, dikkatli ol.")
+            # Bot always responds in simulation now for fun
+            time.sleep(random.uniform(0.5, 1.5))
+            resp = get_bot_response(cmd_line)
+            print(f"{Colors.BLUE}[{timestamp}]{Colors.ENDC} <{Colors.RED}Bot{Colors.ENDC}> {resp}")
         else:
             print_error("Bilinmeyen komut. 'yardim' yazarak listeyi görebilirsiniz.")
 
 def main():
     clear_screen()
-    type_print("Sistem Başlatılıyor...", 0.05, Colors.GREEN)
+    
+    # Sound effect
+    threading.Thread(target=play_laser_sound).start()
+    
+    # Intro Animation
+    animate_skull()
     time.sleep(0.5)
-    print_line("Çekirdek Yükleniyor... [OK]", prefix="[init]", color=Colors.CYAN)
-    print_line("BitchX Modülleri Entegre Edildi... [OK]", prefix="[init]", color=Colors.CYAN)
-    print_line("Arayüz: TERMINAL MODU", prefix="[config]", color=Colors.YELLOW)
-    print_line("Dil: Türkçe", prefix="[config]", color=Colors.YELLOW)
+    
+    clear_screen()
+    print(ASCII_LOGO)
+    
+    type_print("Sistem Başlatılıyor...", 0.05, Colors.GREEN)
+    
+    # Fake loading bars
+    loading_steps = [
+        ("Çekirdek Yükleniyor", Colors.CYAN),
+        ("Kriptolama Modülleri", Colors.BLUE),
+        ("Ağ Sürücüleri", Colors.YELLOW),
+        ("BitchX Arayüzü", Colors.RED)
+    ]
+    
+    for text, color in loading_steps:
+        sys.stdout.write(f"{color}[*] {text} ... {Colors.ENDC}")
+        sys.stdout.flush()
+        time.sleep(0.3)
+        print(f"{Colors.GREEN}[OK]{Colors.ENDC}")
+    
     print(Colors.GREEN + "----------------------------------------" + Colors.ENDC)
     print("Hazır. Komut girmek için bekliyor.")
     print(f"Yardım için '{Colors.BOLD}yardim{Colors.ENDC}' yazın.")
