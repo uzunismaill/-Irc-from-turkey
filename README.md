@@ -1,4 +1,5 @@
 # Mr.Sword IRC Client - Terminal Sürümü (2025)
+<img width="550" height="510" alt="image" src="https://github.com/user-attachments/assets/773848e7-ec55-408f-8852-ca0d3ed4d2f5" />
 
 Bu proje, terminal (komut satırı) üzerinden çalışan, hacker/matrix temalı bir IRC istemcisi simülasyonu ve P2P sohbet aracıdır. Web tarayıcısı gerektirmez, doğrudan terminalinizde çalışır.
 
@@ -66,3 +67,4 @@ Bu yazılım eğitim ve eğlence amaçlı hazırlanmıştır. Kötü amaçlı ku
 
 ---
 *İyi eğlenceler!*
+
